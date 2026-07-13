@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Share2, Check, Sparkles, Image, Layout, Palette, Smartphone, RefreshCw } from 'lucide-react';
-import { Rule } from '../types';
+import { X, Download, Share2, Check, Sparkles, Image, Layout, Palette, Smartphone, RefreshCw, Lock } from 'lucide-react';
+import { Rule, User, UserProgress } from '../types';
 
 interface ShareImageModalProps {
   isOpen: boolean;
   onClose: () => void;
   rule: Rule;
+  currentUser: User | null;
+  progress: UserProgress;
+  onDownloadComplete: (ruleId: number) => void;
 }
 
 type AspectRatio = 'square' | 'story';
@@ -65,7 +68,14 @@ const THEMES: ThemePreset[] = [
   },
 ];
 
-export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, rule }) => {
+export const ShareImageModal: React.FC<ShareImageModalProps> = ({
+  isOpen,
+  onClose,
+  rule,
+  currentUser,
+  progress,
+  onDownloadComplete,
+}) => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square');
   const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(THEMES[0]);
   const [includeChapter, setIncludeChapter] = useState(true);
@@ -269,7 +279,7 @@ export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClos
       }
 
       // 6. Bottom Brand Watermark & Copyright Statement
-      const watermarkY = height - innerPadding - 95;
+      const watermarkY = height - innerPadding - (currentUser ? 115 : 95);
       ctx.font = '600 16px "JetBrains Mono", monospace';
       ctx.fillStyle = selectedTheme.accentColor;
       ctx.letterSpacing = '3.5px';
@@ -285,6 +295,13 @@ export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClos
       ctx.letterSpacing = '1.5px';
       ctx.fillText('© 2026 FORTY-ONE RULES • ALL RIGHTS RESERVED', width / 2, watermarkY + 46);
 
+      if (currentUser) {
+        ctx.font = '700 11.5px "JetBrains Mono", monospace';
+        ctx.fillStyle = selectedTheme.accentColor;
+        ctx.letterSpacing = '1.8px';
+        ctx.fillText(`LICENSED EXCLUSIVELY TO: ${currentUser.email.toUpperCase()} • NON-TRANSFERABLE`, width / 2, watermarkY + 68);
+      }
+
       // Convert to image url
       const dataUrl = canvas.toDataURL('image/png');
       setPreviewUrl(dataUrl);
@@ -292,12 +309,27 @@ export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClos
     }, 150);
   };
 
+  const isPremium = (progress.tier || 'free') === 'elite' || (progress.tier || 'free') === 'standard';
+  const hasDownloadedOnce = (progress.downloadedRules || []).includes(rule.id);
+
   const handleDownload = () => {
     if (!previewUrl) return;
+    if (!isPremium) {
+      alert("Downloading High-Res PNG is restricted to Lifetime Wisdom License holders. Please upgrade to download.");
+      return;
+    }
+    if (hasDownloadedOnce) {
+      alert("This rule card has already been downloaded once under your license. Rule cards are licensed as a single, non-transferable copy per elite account.");
+      return;
+    }
+
     const link = document.createElement('a');
     link.download = `FortyOneRules_Day${rule.id}_Share.png`;
     link.href = previewUrl;
     link.click();
+
+    // Fire download completion
+    onDownloadComplete(rule.id);
   };
 
   const handleCopyLink = () => {
@@ -481,11 +513,31 @@ export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClos
               <div className="space-y-2 pt-6 mt-6 border-t border-[#1A1A1E]">
                 <button
                   onClick={handleDownload}
-                  disabled={isRendering}
-                  className="w-full py-3 bg-[#D4AF37] hover:bg-[#bfa02e] disabled:bg-gray-700 text-black text-[10px] uppercase tracking-widest font-bold font-mono rounded-sm transition-all flex items-center justify-center gap-2"
+                  disabled={isRendering || hasDownloadedOnce}
+                  className={`w-full py-3 text-[10px] uppercase tracking-widest font-bold font-mono rounded-sm transition-all flex items-center justify-center gap-2 ${
+                    hasDownloadedOnce
+                      ? 'bg-[#121214] border border-[#222226] text-[#8A8A8E] cursor-not-allowed'
+                      : !isPremium
+                      ? 'bg-[#1A1A1E] border border-red-500/20 text-red-400 hover:bg-red-950/20'
+                      : 'bg-[#D4AF37] hover:bg-[#bfa02e] text-black'
+                  }`}
                 >
-                  <Download size={14} />
-                  Download High-Res PNG
+                  {hasDownloadedOnce ? (
+                    <>
+                      <Lock size={12} className="text-gray-500" />
+                      Downloaded Once (License Limit)
+                    </>
+                  ) : !isPremium ? (
+                    <>
+                      <Lock size={12} />
+                      Premium Upgrade Required
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} />
+                      Download High-Res PNG
+                    </>
+                  )}
                 </button>
 
                 <button
@@ -506,8 +558,13 @@ export const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClos
                   )}
                 </button>
                 
-                <p className="text-[9px] text-center text-gray-500 font-mono pt-1">
-                  Ready to post to LinkedIn, Instagram Stories, or WhatsApp
+                <p className="text-[9px] text-center text-gray-500 font-mono pt-1 leading-relaxed">
+                  {hasDownloadedOnce 
+                    ? "Each rule is restricted to a single non-transferable high-res download per license holder."
+                    : isPremium 
+                    ? `Licensed to ${currentUser?.email || 'your email'}. Watermarked & non-transferable.` 
+                    : "Upgrade to the Lifetime Wisdom License to unlock high-res watermarked downloads."
+                  }
                 </p>
               </div>
             </div>

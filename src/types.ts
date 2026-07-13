@@ -1,3 +1,9 @@
+export interface User {
+  email: string;
+  name: string;
+  createdAt: string; // ISO String
+}
+
 export interface Rule {
   id: number;
   chapterNumber: number;
@@ -21,4 +27,5 @@ export interface UserProgress {
   dailyQueriesUsed?: number;
   lastQueryResetDate?: string | null;
   lastViewedRuleId?: number;
+  downloadedRules?: number[]; // Track downloaded rule IDs for "download once" restriction
 }

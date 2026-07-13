@@ -19,19 +19,24 @@ import {
   Clock,
   Heart,
   Lock,
-  Image
+  Image,
+  User as UserIcon
 } from 'lucide-react';
 
 import { RULES } from './data';
-import { UserProgress } from './types';
+import { UserProgress, User } from './types';
 import JournalPanel from './components/JournalPanel';
 import DirectoryModal from './components/DirectoryModal';
 import ElaborationPanel from './components/ElaborationPanel';
 import BillingModal from './components/BillingModal';
 import { ShareImageModal } from './components/ShareImageModal';
 import { ShareModal } from './components/ShareModal';
+import { AuthLandingPage } from './components/AuthLandingPage';
 
 export default function App() {
+  // User Session State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   // Local time & Date calculation
   const [formattedDate, setFormattedDate] = useState('');
   const [todayRuleId, setTodayRuleId] = useState(1);
@@ -138,6 +143,41 @@ export default function App() {
     }
   }, []);
 
+  // Load user session on startup
+  useEffect(() => {
+    const storedUser = localStorage.getItem('forty_one_rules_current_user');
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (err) {
+        console.error("Error loading user session", err);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('forty_one_rules_current_user');
+    setIsJournalOpen(false);
+    setIsDirectoryOpen(false);
+    setIsElaborateOpen(false);
+    setIsBillingOpen(false);
+    setIsShareImageOpen(false);
+    setIsShareOpen(false);
+    stopSpeech();
+  };
+
+  const handleDownloadComplete = (ruleId: number) => {
+    const downloadedRules = progress.downloadedRules || [];
+    if (!downloadedRules.includes(ruleId)) {
+      const updated = [...downloadedRules, ruleId];
+      saveProgress({
+        ...progress,
+        downloadedRules: updated
+      });
+    }
+  };
+
   // Sync state helper to save to localstorage
   const saveProgress = (newProgress: UserProgress) => {
     setProgress(newProgress);
@@ -163,7 +203,7 @@ export default function App() {
 
   // Mark current rule as read/completed & calculate streaks
   const handleMarkComplete = () => {
-    if ((progress.tier || 'free') === 'free' && currentRuleId > 5) {
+    if ((progress.tier || 'free') === 'free' && currentRuleId > 3) {
       setIsBillingOpen(true);
       return;
     }
@@ -205,7 +245,7 @@ export default function App() {
 
   // Toggle favorite/bookmark status
   const toggleFavorite = (id: number) => {
-    if ((progress.tier || 'free') === 'free' && id > 5) {
+    if ((progress.tier || 'free') === 'free' && id > 3) {
       setIsBillingOpen(true);
       return;
     }
@@ -278,7 +318,7 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
 
   // Speak Wisdom using browser SpeechSynthesis
   const startSpeech = () => {
-    const isLocked = (progress.tier || 'free') === 'free' && currentRuleId > 5;
+    const isLocked = (progress.tier || 'free') === 'free' && currentRuleId > 3;
     if (isLocked) {
       setIsBillingOpen(true);
       return;
@@ -405,6 +445,96 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
     })
   };
 
+  // Account age & limitation calculations
+  const getDaysSinceSignUp = () => {
+    if (!currentUser) return 1;
+    const signUpDate = new Date(currentUser.createdAt);
+    const today = new Date();
+    // Calculate difference in calendar days
+    const diffTime = today.getTime() - signUpDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(1, diffDays);
+  };
+
+  const daysSinceSignUp = getDaysSinceSignUp();
+  const isTrialExpired = daysSinceSignUp > 3 && (progress.tier || 'free') !== 'elite';
+
+  if (!currentUser) {
+    return (
+      <AuthLandingPage 
+        onLoginSuccess={(u) => { 
+          setCurrentUser(u); 
+          localStorage.setItem('forty_one_rules_current_user', JSON.stringify(u)); 
+        }} 
+      />
+    );
+  }
+
+  if (isTrialExpired) {
+    return (
+      <div className="min-h-screen bg-[#070708] text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
+        {/* Ambient top light */}
+        <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-red-900/10 to-transparent pointer-events-none select-none" />
+        <div className="absolute w-[400px] h-[400px] bg-red-950/5 blur-[120px] rounded-full pointer-events-none select-none" />
+
+        <div className="max-w-md w-full bg-[#0B0B0C] border border-red-500/20 p-8 rounded-sm text-center space-y-6 shadow-2xl relative z-10">
+          <div className="w-16 h-16 rounded-full bg-red-950/40 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
+            <Lock size={28} className="animate-pulse" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono text-red-400 uppercase tracking-[0.25em] block font-bold">
+              Trial Blockade Active
+            </span>
+            <h2 className="font-serif text-2xl text-white">Your 3-Day Free Trial has Expired</h2>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              The Rules of Business Wisdom are reserved for active builders. You have reached the limit of your 3-day trial session since registering on <strong className="text-white">{new Date(currentUser.createdAt).toLocaleDateString()}</strong>.
+            </p>
+          </div>
+
+          {/* Offer highlight */}
+          <div className="p-4 bg-[#121214] border border-red-500/10 rounded text-left space-y-2.5">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
+              <Sparkles size={12} className="animate-spin text-[#D4AF37]" /> Lifetime Wisdom License
+            </h4>
+            <p className="text-[11px] text-gray-300 leading-relaxed">
+              Invest once-off to gain full unrestricted lifetime access. No renewals, no monthly subscription fatigue.
+            </p>
+            <ul className="space-y-1.5 text-[10px] text-[#8A8A8E]">
+              <li className="flex items-center gap-2">✔ Complete access to all 41 rules for life</li>
+              <li className="flex items-center gap-2">✔ Unlimited high-resolution non-transferable PNG downloads</li>
+              <li className="flex items-center gap-2">✔ Unlimited queries with the customized Elaboration AI</li>
+              <li className="flex items-center gap-2">✔ Dynamic Speed & Kadence Audio Speech Engine</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => setIsBillingOpen(true)}
+              className="w-full py-3 bg-[#D4AF37] hover:bg-[#bfa02e] text-black font-mono font-bold text-[10px] uppercase tracking-widest rounded-sm transition-all shadow-lg"
+            >
+              Purchase Lifetime License (R1 499)
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full py-2.5 bg-transparent border border-[#222226] text-gray-400 hover:text-white hover:bg-white/5 font-mono text-[9px] uppercase tracking-widest rounded-sm transition-all"
+            >
+              Sign Out of Session
+            </button>
+          </div>
+        </div>
+
+        {/* Embedded Premium Billing License & Subscriptions Modal inside the blockade */}
+        <BillingModal 
+          isOpen={isBillingOpen}
+          onClose={() => setIsBillingOpen(false)}
+          progress={progress}
+          onUpgrade={handleUpgradeTier}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#E0E0E0] font-sans flex flex-col justify-between selection:bg-[#D4AF37]/30 selection:text-white relative overflow-x-hidden">
       
@@ -431,7 +561,33 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
             </button>
           </div>
 
-          <div className="flex gap-6 items-center w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex flex-wrap gap-4 items-center w-full sm:w-auto justify-between sm:justify-end">
+            {/* User Profile & Trial Badge */}
+            <div className="flex items-center gap-2.5 bg-[#121214] border border-[#1A1A1E] px-3 py-1.5 rounded text-left">
+              <div className="p-1 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">
+                <UserIcon size={12} />
+              </div>
+              <div className="hidden xs:block">
+                <p className="text-[10px] text-white font-bold leading-none truncate max-w-[90px]">{currentUser?.name}</p>
+                <p className="text-[9px] text-gray-500 font-mono leading-none mt-0.5 truncate max-w-[90px]">{currentUser?.email}</p>
+              </div>
+              <div className="h-4 w-[1px] bg-[#1A1A1E] hidden xs:block" />
+              <div>
+                {(progress.tier || 'free') === 'elite' ? (
+                  <span className="text-[8px] uppercase tracking-wider font-mono text-[#D4AF37] border border-[#D4AF37]/30 px-1 py-0.5 rounded bg-[#D4AF37]/5 font-bold">Lifetime</span>
+                ) : (
+                  <span className="text-[8px] uppercase tracking-wider font-mono text-emerald-400 border border-emerald-500/30 px-1 py-0.5 rounded bg-emerald-950/10">Trial Day {daysSinceSignUp}/3</span>
+                )}
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="text-[9px] uppercase tracking-wider text-red-400 hover:text-red-300 font-mono underline ml-0.5"
+                title="Sign out of Wisdom Session"
+              >
+                Logout
+              </button>
+            </div>
+
             {/* Streak Counter */}
             <div className="flex items-center gap-2 bg-[#121214] border border-[#1A1A1E] px-3.5 py-1.5 rounded">
               <Flame size={14} className={progress.streak > 0 ? "text-[#D4AF37] fill-[#D4AF37] animate-bounce" : "text-gray-600"} />
@@ -529,7 +685,7 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
                       )}
                     </div>
 
-                    {((progress.tier || 'free') === 'free' && currentRuleId > 5) ? (
+                    {((progress.tier || 'free') === 'free' && currentRuleId > 3) ? (
                       <div className="p-6 md:p-8 border border-[#D4AF37]/20 bg-[#121214]/60 rounded-md space-y-5 text-left relative overflow-hidden backdrop-blur-sm">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full blur-2xl pointer-events-none" />
                         
@@ -539,14 +695,13 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
                         </div>
 
                         <p className="text-xs md:text-sm text-gray-300 leading-relaxed max-w-xl font-sans">
-                          To maintain standard commercial licensing, access to <strong className="text-white">Rule 6 through Rule 41</strong> is exclusive to Standard Entrepreneurs and Elite Invincible Builders.
+                          To maintain exclusive licensing, access to <strong className="text-white">Rule 4 through Rule 41</strong> is exclusive to Lifetime Wisdom License holders. Your 3-day free trial lets you study the first 3 core rules.
                         </p>
 
                         <div className="space-y-2 text-[11px] text-[#8A8A8E] bg-[#0E0E10] p-4 rounded border border-[#1A1A1E]">
-                          <p className="font-mono text-[9px] uppercase tracking-wider text-[#D4AF37] font-bold">Active licensing options:</p>
+                          <p className="font-mono text-[9px] uppercase tracking-wider text-[#D4AF37] font-bold">Unlocking Option:</p>
                           <ul className="space-y-1.5 mt-1">
-                            <li className="flex items-center gap-1.5">✓ <strong>Standard (R150/Mo)</strong>: Complete 41 rules, basic audio speed, 15 daily AI queries</li>
-                            <li className="flex items-center gap-1.5">✓ <strong>Elite (R299/Mo)</strong>: Full manuscript access, UNLIMITED consulting queries, manual backups</li>
+                            <li className="flex items-center gap-1.5">★ <strong>Lifetime Wisdom License (R1 499 Once-off)</strong>: Complete 41 rules for life, unlimited AI inquiries, non-transferable watermarked downloads, speed and tempo controls</li>
                           </ul>
                         </div>
 
@@ -555,10 +710,10 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
                             onClick={() => setIsBillingOpen(true)}
                             className="px-5 py-2.5 bg-[#D4AF37] hover:bg-[#bfa02e] text-black text-[10px] uppercase tracking-widest font-bold font-mono rounded-sm transition-all"
                           >
-                            Unlock All 41 Rules & Mentorship
+                            Unlock All 41 Rules & Wisdom License
                           </button>
                           <p className="text-[10px] text-gray-500 font-mono">
-                            Credit card & direct Capitec Bank EFT supported
+                            EFT Reference and Card secure checkout supported
                           </p>
                         </div>
                       </div>
@@ -599,7 +754,7 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
 
                   <button 
                     onClick={() => {
-                      if ((progress.tier || 'free') === 'free' && currentRuleId > 5) {
+                      if ((progress.tier || 'free') === 'free' && currentRuleId > 3) {
                         setIsBillingOpen(true);
                       } else {
                         setIsJournalOpen(true);
@@ -613,7 +768,7 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
 
                   <button 
                     onClick={() => {
-                      if ((progress.tier || 'free') === 'free' && currentRuleId > 5) {
+                      if ((progress.tier || 'free') === 'free' && currentRuleId > 3) {
                         setIsBillingOpen(true);
                       } else {
                         setIsElaborateOpen(true);
@@ -870,6 +1025,9 @@ Meditation and inspiration for tomorrow's entrepreneurs.`;
         isOpen={isShareImageOpen}
         onClose={() => setIsShareImageOpen(false)}
         rule={currentRule}
+        currentUser={currentUser}
+        progress={progress}
+        onDownloadComplete={handleDownloadComplete}
       />
 
       {/* Social & Messaging Platforms Share Modal */}

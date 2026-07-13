@@ -11,7 +11,7 @@ interface BillingModalProps {
 
 export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: BillingModalProps) {
   const [activeTab, setActiveTab] = useState<'card' | 'eft'>('card');
-  const [selectedPlan, setSelectedPlan] = useState<'standard' | 'elite'>('standard');
+  const [selectedPlan, setSelectedPlan] = useState<'standard' | 'elite'>('elite');
   
   // Card input states for mock validation
   const [cardNumber, setCardNumber] = useState('');
@@ -30,8 +30,8 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
-      onUpgrade(selectedPlan);
-      setSuccessMessage(`Payment received! Welcome to ${selectedPlan === 'standard' ? 'Standard Entrepreneur' : 'Elite Invincible Builder'} mode.`);
+      onUpgrade('elite');
+      setSuccessMessage(`Payment received! Welcome to Lifetime Wisdom Mode. Your lifetime elite license is fully activated.`);
       setTimeout(() => {
         setSuccessMessage(null);
         onClose();
@@ -43,8 +43,8 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
-      onUpgrade(tier);
-      setSuccessMessage(`EFT Reference recorded! Your ${tier === 'standard' ? 'Standard' : 'Elite'} trial is instantly activated.`);
+      onUpgrade('elite');
+      setSuccessMessage(`EFT Reference recorded! Your Lifetime Elite license is instantly activated.`);
       setTimeout(() => {
         setSuccessMessage(null);
         onClose();
@@ -72,7 +72,7 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
           </div>
 
           <p className="text-xs text-[#8A8A8E] leading-relaxed">
-            The Rules are written for those who build, not just those who read. Choose your level of access and build your invincible business today.
+            The Rules are written for those who build, not just those who read. Invest in lifetime access and build your invincible business today.
           </p>
 
           {/* Pricing Grid */}
@@ -108,46 +108,7 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
               )}
             </div>
 
-            {/* Standard Tier */}
-            <div 
-              onClick={() => setSelectedPlan('standard')}
-              className={`p-4 rounded border text-left transition-all cursor-pointer ${
-                selectedPlan === 'standard' ? 'border-[#D4AF37] bg-[#121214]/50 ring-1 ring-[#D4AF37]' : 'border-[#1A1A1E] hover:border-[#2A2A2E]'
-              }`}
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h4 className="text-sm font-serif italic text-white flex items-center gap-1.5">
-                    Standard Entrepreneur 
-                    <Flame size={12} className="text-[#D4AF37] animate-pulse" />
-                  </h4>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Scale Your Operations</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-mono font-bold text-[#D4AF37]">R150</span>
-                  <span className="text-[9px] text-gray-500"> / Mo</span>
-                </div>
-              </div>
-              <ul className="space-y-1.5 text-[11px] text-[#8A8A8E]">
-                <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Complete access to all 41 rules
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> 15 AI Elaboration Queries / day
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Unlock audio listening & speed controls
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Unlimited journaling & reflections
-                </li>
-              </ul>
-              {currentTier === 'standard' && (
-                <span className="inline-block mt-3 bg-emerald-950/20 border border-emerald-500/20 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-mono text-emerald-400">Active License</span>
-              )}
-            </div>
-
-            {/* Elite Tier */}
+            {/* Lifetime Wisdom License */}
             <div 
               onClick={() => setSelectedPlan('elite')}
               className={`p-4 rounded border text-left transition-all cursor-pointer ${
@@ -157,32 +118,35 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
               <div className="flex justify-between items-center mb-2">
                 <div>
                   <h4 className="text-sm font-serif italic text-white flex items-center gap-1.5">
-                    Elite Invincible Builder
+                    Lifetime Wisdom License
                     <Sparkles size={12} className="text-[#D4AF37] animate-pulse" />
                   </h4>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Master The Industry</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Unrestricted Mastery</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-mono font-bold text-[#D4AF37]">R299</span>
-                  <span className="text-[9px] text-gray-500"> / Mo</span>
+                  <span className="text-sm font-mono font-bold text-[#D4AF37]">R1 499</span>
+                  <span className="text-[10px] text-gray-400 font-mono block">Once off</span>
                 </div>
               </div>
               <ul className="space-y-1.5 text-[11px] text-[#8A8A8E]">
                 <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Complete access to all 41 rules
+                  <Check size={10} className="text-emerald-500" /> Complete access to all 41 rules for life
                 </li>
                 <li className="flex items-center gap-2">
                   <Check size={10} className="text-emerald-500" /> <strong className="text-white">UNLIMITED</strong> AI Elaboration Queries
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Priority mentorship & custom question context
+                  <Check size={10} className="text-emerald-500" /> Unlock audio listening & speed controls
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check size={10} className="text-emerald-500" /> Export/Import local logs & backups
+                  <Check size={10} className="text-emerald-500" /> Unlimited journaling, reflections & backups
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-emerald-500" /> Lifetime upgrades & priority mentorship
                 </li>
               </ul>
-              {currentTier === 'elite' && (
-                <span className="inline-block mt-3 bg-emerald-950/20 border border-emerald-500/20 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-mono text-emerald-400">Active License</span>
+              {(currentTier === 'elite' || currentTier === 'standard') && (
+                <span className="inline-block mt-3 bg-emerald-950/20 border border-emerald-500/20 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-mono text-emerald-400">Active Lifetime License</span>
               )}
             </div>
 
@@ -203,13 +167,13 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
             <div>
               <h4 className="text-xs uppercase tracking-widest text-[#8A8A8E] font-semibold">Checkout Summary</h4>
               <p className="font-serif italic text-lg text-white mt-1">
-                {selectedPlan === 'standard' ? 'Standard Entrepreneur' : 'Elite Invincible Builder'}
+                Lifetime Wisdom License
               </p>
               <div className="flex justify-between items-baseline mt-2">
                 <span className="text-2xl font-serif font-bold text-white">
-                  R{selectedPlan === 'standard' ? '150' : '299'}
+                  R1 499
                 </span>
-                <span className="text-xs text-gray-500 font-mono">Monthly Subscription</span>
+                <span className="text-xs text-gray-500 font-mono">Once-off Payment</span>
               </div>
             </div>
 
@@ -306,7 +270,7 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
                   disabled={isProcessing}
                   className="w-full py-3 bg-white text-black hover:bg-gray-200 disabled:bg-zinc-800 disabled:text-zinc-600 text-xs uppercase tracking-widest font-bold rounded-sm transition-all mt-4 flex items-center justify-center gap-2"
                 >
-                  {isProcessing ? 'Processing Securely...' : `Upgrade Now (R${selectedPlan === 'standard' ? '150' : '299'})`}
+                  {isProcessing ? 'Processing Securely...' : 'Upgrade Now (R1 499 Once-off)'}
                   <ArrowRight size={12} />
                 </button>
 
@@ -354,7 +318,7 @@ export default function BillingModal({ isOpen, onClose, progress, onUpgrade }: B
 
                     <div>
                       <p className="text-[9px] uppercase tracking-wider text-gray-500 font-mono">Reference Format</p>
-                      <p className="text-[#D4AF37] font-mono font-bold">WISDOM-{progress.streak || '1'}-{selectedPlan.toUpperCase()}</p>
+                      <p className="text-[#D4AF37] font-mono font-bold">WISDOM-{progress.streak || '1'}-LIFETIME</p>
                     </div>
                   </div>
                 </div>
